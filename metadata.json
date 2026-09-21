@@ -1,0 +1,6 @@
+{
+  "name": "Lari 1.5K - Timer Ujian & Evaluasi",
+  "description": "Aplikasi pencatat waktu ujian lari 1.5 km dengan rekam putaran, grafik performa per km, sinkronisasi cloud, audio lap 500m, penilaian otomatis 80-100, leaderboard, dan ekspor laporan PDF guru.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
