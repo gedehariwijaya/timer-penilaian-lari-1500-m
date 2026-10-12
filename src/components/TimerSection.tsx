@@ -56,8 +56,8 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
   const [isFinished, setIsFinished] = useState(false);
   const [savedRunResult, setSavedRunResult] = useState<RunSession | null>(null);
 
-  // Track settings: 400m track (standard athletic stadium) has 4 laps (400, 400, 400, 300) = 1500m
-  const [trackMode, setTrackMode] = useState<"track_400m" | "track_300m" | "manual_500m">("track_400m");
+  // Track settings: 1500m track is default (1 full 1500m run)
+  const [trackMode, setTrackMode] = useState<"track_1500m" | "track_400m" | "track_300m" | "manual_500m">("track_1500m");
 
   // Cumulative distance achieved
   const [cumulativeDistanceM, setCumulativeDistanceM] = useState(0);
@@ -72,7 +72,10 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
 
   // Track structure definition
   const getLapDistanceForLap = (lapNum: number): number => {
-    if (trackMode === "track_400m") {
+    if (trackMode === "track_1500m") {
+      // 1 full 1500m lap
+      return 1500;
+    } else if (trackMode === "track_400m") {
       // 400 + 400 + 400 + 300 = 1500m (Total 4 laps)
       return lapNum <= 3 ? 400 : 300;
     } else if (trackMode === "track_300m") {
@@ -85,6 +88,7 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
   };
 
   const getTotalLapsForMode = (): number => {
+    if (trackMode === "track_1500m") return 1;
     if (trackMode === "track_400m") return 4;
     if (trackMode === "track_300m") return 5;
     return 3;
@@ -471,9 +475,14 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
               id="select-track-mode"
               disabled={isRunning || elapsedMs > 0}
               value={trackMode}
-              onChange={(e) => setTrackMode(e.target.value as "track_400m" | "track_300m" | "manual_500m")}
+              onChange={(e) =>
+                setTrackMode(
+                  e.target.value as "track_1500m" | "track_400m" | "track_300m" | "manual_500m"
+                )
+              }
               className="text-xs font-semibold py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-60 focus:outline-hidden"
             >
+              <option value="track_1500m">Lintasan 1500m (1 Putaran)</option>
               <option value="track_400m">Lintasan 400m (4 Putaran)</option>
               <option value="track_300m">Lintasan 300m (5 Putaran)</option>
               <option value="manual_500m">Segmen 500m (3 Putaran)</option>
@@ -658,7 +667,9 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
               }`}
             >
               <Flag className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-              <span className="whitespace-nowrap">Rekam Lap {currentLapNumber}</span>
+              <span className="whitespace-nowrap">
+                {trackMode === "track_1500m" ? "Selesai (1.500m)" : `Rekam Lap ${currentLapNumber}`}
+              </span>
             </button>
           )}
 

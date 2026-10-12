@@ -55,7 +55,7 @@ export interface EvaluationResult {
 }
 
 export interface AppSettings {
-  trackType: "track_400m" | "track_300m" | "free_run";
+  trackType: "track_1500m" | "track_400m" | "track_300m" | "free_run";
   soundNotification: boolean;
   voiceNotification: boolean;
   notificationIntervalM: number; // default 500
