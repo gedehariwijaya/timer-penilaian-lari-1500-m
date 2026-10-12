@@ -27,7 +27,7 @@ export const EvaluationCard: React.FC<EvaluationCardProps> = ({ run }) => {
               className={`text-[11px] sm:text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
                 run.mode === "latihan"
                   ? "text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 border-teal-200 dark:border-teal-800"
-                  : "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800"
+                  : "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 font-extrabold"
               }`}
             >
               {run.mode === "latihan" ? "👟 Mode Latihan" : "🏃 Evaluasi Ujian 1.500m"}

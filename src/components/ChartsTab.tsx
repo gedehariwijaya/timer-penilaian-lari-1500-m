@@ -46,6 +46,17 @@ export const ChartsTab: React.FC<ChartsTabProps> = ({ runs, darkMode }) => {
 
         {/* Student Selector */}
         <div className="flex items-center space-x-2">
+          {currentRun && (
+            <span
+              className={`text-[10px] font-extrabold px-2 py-1 rounded-md shrink-0 border ${
+                currentRun.mode === "latihan"
+                  ? "bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300 border-teal-200 dark:border-teal-800"
+                  : "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 border border-red-200 dark:border-red-800"
+              }`}
+            >
+              {currentRun.mode === "latihan" ? "👟 LATIHAN" : "🔴 UJIAN RESMI"}
+            </span>
+          )}
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0">Siswa:</span>
           <select
             value={selectedRunId}

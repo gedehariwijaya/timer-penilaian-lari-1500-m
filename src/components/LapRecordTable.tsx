@@ -1,14 +1,15 @@
 import React from "react";
-import { LapRecord } from "../types";
+import { LapRecord, RunMode } from "../types";
 import { formatTime, formatPace } from "../utils/grading";
 import { Zap, Clock, Flame, ChevronRight } from "lucide-react";
 
 interface LapRecordTableProps {
   laps: LapRecord[];
   targetLaps?: number;
+  mode?: RunMode;
 }
 
-export const LapRecordTable: React.FC<LapRecordTableProps> = ({ laps, targetLaps = 4 }) => {
+export const LapRecordTable: React.FC<LapRecordTableProps> = ({ laps, targetLaps = 4, mode = "ujian" }) => {
   if (laps.length === 0) {
     return (
       <div className="py-6 text-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
@@ -94,8 +95,12 @@ export const LapRecordTable: React.FC<LapRecordTableProps> = ({ laps, targetLaps
 
       {targetLaps && laps.length < targetLaps && (
         <div className="px-4 py-2.5 bg-slate-50/80 dark:bg-slate-900/80 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
-          <span>Target Total Ujian: {targetLaps} Putaran (1.500m)</span>
-          <span className="font-medium text-emerald-600 dark:text-emerald-400 flex items-center">
+          <span>Target Total {mode === "ujian" ? "Ujian" : "Latihan"}: {targetLaps} Putaran (1.500m)</span>
+          <span
+            className={`font-semibold flex items-center ${
+              mode === "ujian" ? "text-red-600 dark:text-red-400" : "text-teal-600 dark:text-teal-400"
+            }`}
+          >
             Sisa {targetLaps - laps.length} putaran lagi <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
           </span>
         </div>

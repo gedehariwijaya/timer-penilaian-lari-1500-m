@@ -357,7 +357,7 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
             onClick={() => setRunMode("ujian")}
             className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
               runMode === "ujian"
-                ? "bg-emerald-600 text-white shadow-xs"
+                ? "bg-red-600 hover:bg-red-700 text-white shadow-sm ring-2 ring-red-500/25"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
@@ -369,7 +369,7 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
             onClick={() => setRunMode("latihan")}
             className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
               runMode === "latihan"
-                ? "bg-teal-600 text-white shadow-xs"
+                ? "bg-teal-600 hover:bg-teal-700 text-white shadow-sm ring-2 ring-teal-500/25"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
@@ -377,18 +377,33 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end space-x-2">
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center space-x-1">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span>Tanggal:</span>
-          </span>
-          <input
-            type="date"
-            disabled={isRunning}
-            value={runDate}
-            onChange={(e) => setRunDate(e.target.value)}
-            className="text-xs font-semibold py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden"
-          />
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2">
+          {/* Active Mode Highlight Badge */}
+          {runMode === "ujian" ? (
+            <span className="inline-flex items-center space-x-1 text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-red-50 dark:bg-red-950/70 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+              <span>UJIAN RESMI</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center space-x-1 text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/70 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-900/60 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-teal-500" />
+              <span>LATIHAN</span>
+            </span>
+          )}
+
+          <div className="flex items-center space-x-1.5">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center space-x-1">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>Tanggal:</span>
+            </span>
+            <input
+              type="date"
+              disabled={isRunning}
+              value={runDate}
+              onChange={(e) => setRunDate(e.target.value)}
+              className="text-xs font-semibold py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden"
+            />
+          </div>
         </div>
       </div>
 
@@ -478,10 +493,20 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
       )}
 
       {/* Main Stopwatch Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 sm:p-7 shadow-sm text-center relative overflow-hidden">
+      <div
+        className={`bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-7 text-center relative overflow-hidden transition-all ${
+          runMode === "ujian"
+            ? "border-2 border-red-500/80 dark:border-red-600/80 shadow-lg shadow-red-500/10 ring-4 ring-red-500/5"
+            : "border border-slate-200 dark:border-slate-800 shadow-sm"
+        }`}
+      >
         {/* Subtle Background Glow for Running state */}
         {isRunning && (
-          <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none animate-pulse" />
+          <div
+            className={`absolute inset-0 pointer-events-none animate-pulse ${
+              runMode === "ujian" ? "bg-red-500/10" : "bg-emerald-500/5"
+            }`}
+          />
         )}
 
         {/* Big Stopwatch Display */}
@@ -501,7 +526,13 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
         <div className="max-w-2xl mx-auto my-4 sm:my-6 px-1">
           <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
             <span>{cumulativeDistanceM} m</span>
-            <span className="text-emerald-600 dark:text-emerald-400">
+            <span
+              className={
+                runMode === "ujian"
+                  ? "text-red-600 dark:text-red-400 font-extrabold"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }
+            >
               {progressPercent.toFixed(0)}% Selesai
             </span>
             <span>Target: 1.500 m</span>
@@ -509,7 +540,11 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
 
           <div className="relative w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
             <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300 rounded-full"
+              className={`h-full transition-all duration-300 rounded-full ${
+                runMode === "ujian"
+                  ? "bg-gradient-to-r from-red-600 via-rose-500 to-red-400"
+                  : "bg-gradient-to-r from-emerald-500 to-teal-400"
+              }`}
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -517,13 +552,37 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
           {/* Checkpoint Indicators */}
           <div className="flex justify-between text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-1.5 px-0.5">
             <span>0m</span>
-            <span className={cumulativeDistanceM >= 500 ? "text-emerald-600 dark:text-emerald-400 font-bold" : ""}>
+            <span
+              className={
+                cumulativeDistanceM >= 500
+                  ? runMode === "ujian"
+                    ? "text-red-600 dark:text-red-400 font-bold"
+                    : "text-emerald-600 dark:text-emerald-400 font-bold"
+                  : ""
+              }
+            >
               🔔 500m
             </span>
-            <span className={cumulativeDistanceM >= 1000 ? "text-emerald-600 dark:text-emerald-400 font-bold" : ""}>
+            <span
+              className={
+                cumulativeDistanceM >= 1000
+                  ? runMode === "ujian"
+                    ? "text-red-600 dark:text-red-400 font-bold"
+                    : "text-emerald-600 dark:text-emerald-400 font-bold"
+                  : ""
+              }
+            >
               🔔 1.000m
             </span>
-            <span className={cumulativeDistanceM >= 1500 ? "text-emerald-600 dark:text-emerald-400 font-bold" : ""}>
+            <span
+              className={
+                cumulativeDistanceM >= 1500
+                  ? runMode === "ujian"
+                    ? "text-red-600 dark:text-red-400 font-bold"
+                    : "text-emerald-600 dark:text-emerald-400 font-bold"
+                  : ""
+              }
+            >
               🏁 1.500m
             </span>
           </div>
@@ -569,6 +628,8 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
             className={`py-3 px-5 sm:px-6 rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center space-x-2 shadow-md transition-all active:scale-95 disabled:opacity-50 shrink-0 ${
               isRunning
                 ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/25"
+                : runMode === "ujian"
+                ? "bg-red-600 hover:bg-red-700 text-white shadow-red-600/30"
                 : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25"
             }`}
           >
@@ -580,7 +641,7 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
             ) : (
               <>
                 <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current shrink-0" />
-                <span className="whitespace-nowrap">{elapsedMs > 0 ? "Lanjutkan" : "Mulai Lari"}</span>
+                <span className="whitespace-nowrap">{elapsedMs > 0 ? "Lanjutkan" : runMode === "ujian" ? "Mulai Ujian" : "Mulai Latihan"}</span>
               </>
             )}
           </button>
@@ -590,7 +651,11 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
             <button
               id="btn-timer-record-lap"
               onClick={handleRecordLap}
-              className="py-3 px-4 sm:px-6 rounded-2xl font-extrabold text-sm sm:text-base bg-teal-600 hover:bg-teal-700 text-white shadow-md shadow-teal-600/20 flex items-center justify-center space-x-1.5 transition-all active:scale-95 shrink-0"
+              className={`py-3 px-4 sm:px-6 rounded-2xl font-extrabold text-sm sm:text-base text-white shadow-md flex items-center justify-center space-x-1.5 transition-all active:scale-95 shrink-0 ${
+                runMode === "ujian"
+                  ? "bg-rose-700 hover:bg-rose-800 shadow-rose-700/25"
+                  : "bg-teal-600 hover:bg-teal-700 shadow-teal-600/20"
+              }`}
             >
               <Flag className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
               <span className="whitespace-nowrap">Rekam Lap {currentLapNumber}</span>
@@ -604,8 +669,14 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
               onClick={handleManualFinish}
               className="py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white shadow-sm flex items-center justify-center space-x-1.5 transition shrink-0"
             >
-              <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="whitespace-nowrap">Selesai Ujian</span>
+              <CheckCircle
+                className={`w-4 h-4 shrink-0 ${
+                  runMode === "ujian" ? "text-red-400" : "text-emerald-400"
+                }`}
+              />
+              <span className="whitespace-nowrap">
+                {runMode === "ujian" ? "Selesai Ujian" : "Selesai Latihan"}
+              </span>
             </button>
           )}
 
@@ -638,9 +709,13 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <Clock
+              className={`w-5 h-5 ${
+                runMode === "ujian" ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            />
             <h3 className="font-bold text-base sm:text-lg text-slate-900 dark:text-white">
-              Rekaman Waktu Putaran (Lap Splits)
+              Rekaman Waktu Putaran ({runMode === "ujian" ? "Ujian 1.500m" : "Latihan"})
             </h3>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
@@ -648,7 +723,7 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
           </span>
         </div>
 
-        <LapRecordTable laps={laps} targetLaps={totalLapsTarget} />
+        <LapRecordTable laps={laps} targetLaps={totalLapsTarget} mode={runMode} />
       </div>
     </div>
   );

@@ -147,7 +147,7 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
                 onClick={() => setModeFilter("ujian")}
                 className={`px-3 py-1 rounded-lg transition ${
                   modeFilter === "ujian"
-                    ? "bg-emerald-600 text-white font-bold shadow-xs"
+                    ? "bg-red-600 text-white font-bold shadow-xs"
                     : "text-slate-600 dark:text-slate-400"
                 }`}
               >
@@ -215,7 +215,11 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
             return (
               <div
                 key={run.id}
-                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700/60 transition-all flex flex-col justify-between"
+                className={`bg-white dark:bg-slate-900 rounded-2xl border p-4 sm:p-5 shadow-xs transition-all flex flex-col justify-between ${
+                  isExam
+                    ? "border-red-200/80 dark:border-red-950/80 hover:border-red-400 dark:hover:border-red-700/70"
+                    : "border-slate-200 dark:border-slate-800 hover:border-teal-400 dark:hover:border-teal-700/70"
+                }`}
               >
                 <div>
                   {/* Card Header with Mode Badge & Date */}
@@ -223,7 +227,7 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
                     <span
                       className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-md ${
                         isExam
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          ? "bg-red-50 text-red-700 dark:bg-red-950/80 dark:text-red-300 border border-red-200 dark:border-red-800/80 font-extrabold"
                           : "bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300 border border-teal-200 dark:border-teal-800"
                       }`}
                     >
@@ -364,7 +368,7 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
               <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-3">
                 Rekaman Waktu Tiap Putaran (Laps)
               </h4>
-              <LapRecordTable laps={selectedRun.laps} />
+              <LapRecordTable laps={selectedRun.laps} mode={selectedRun.mode} />
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">

@@ -121,7 +121,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
             onClick={() => setModeFilter("ujian")}
             className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
               modeFilter === "ujian"
-                ? "bg-emerald-600 text-white shadow-xs"
+                ? "bg-red-600 hover:bg-red-700 text-white shadow-sm ring-2 ring-red-500/25"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
@@ -131,7 +131,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
             onClick={() => setModeFilter("latihan")}
             className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
               modeFilter === "latihan"
-                ? "bg-teal-600 text-white shadow-xs"
+                ? "bg-teal-600 hover:bg-teal-700 text-white shadow-sm ring-2 ring-teal-500/25"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
