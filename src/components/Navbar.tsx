@@ -70,7 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Timer className="w-4 h-4" />
-              <span>Timer Ujian</span>
+              <span>Timer Lari</span>
             </button>
 
             <button
@@ -96,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Trophy className="w-4 h-4" />
-              <span>Leaderboard</span>
+              <span>Klasemen</span>
             </button>
 
             <button

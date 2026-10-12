@@ -26,8 +26,12 @@ export interface KmSplit {
   speedKmh: number;
 }
 
+export type RunMode = "ujian" | "latihan";
+
 export interface RunSession {
   id: string;
+  mode: RunMode; // "ujian" (Ujian Lari) atau "latihan" (Latihan)
+  runDate: string; // YYYY-MM-DD tanggal pelaksanaan lari
   student: StudentInfo;
   date: string;
   totalDistanceM: number; // 1500

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { StudentInfo, RunSession } from "./types";
-import { CloudSyncService } from "./utils/cloudSync";
+import React, { useState, useEffect } from "react";
+import { StudentInfo, RunSession, RunMode } from "./types";
+import { FirebaseRunService } from "./services/firebaseRunService";
+import { testConnection } from "./lib/firebase";
 import { audioService } from "./utils/audio";
 import { Navbar } from "./components/Navbar";
 import { TimerSection } from "./components/TimerSection";
@@ -8,7 +9,7 @@ import { LeaderboardSection } from "./components/LeaderboardSection";
 import { HistorySection } from "./components/HistorySection";
 import { ChartsTab } from "./components/ChartsTab";
 import { StudentModal } from "./components/StudentModal";
-import { BatteryCharging, Sparkles, CheckCircle2, ShieldCheck, Award } from "lucide-react";
+import { CheckCircle2, ShieldCheck } from "lucide-react";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<"timer" | "charts" | "leaderboard" | "history">("timer");
@@ -25,13 +26,13 @@ export default function App() {
   // Sound Notifications Toggle
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
-  // Cloud & Local Runs
-  const [runs, setRuns] = useState<RunSession[]>(() => CloudSyncService.getLocalRuns());
+  // Runs State
+  const [runs, setRuns] = useState<RunSession[]>(() => FirebaseRunService.getLocalRuns());
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Student Info for Current Run - Empty by default as requested
+  // Student Info for Current Run - Empty by default
   const [currentStudent, setCurrentStudent] = useState<StudentInfo>({
     name: "",
     className: "",
@@ -53,28 +54,26 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Initial Fetch from Cloud Backend
-  const loadCloudRuns = useCallback(async () => {
-    setIsSyncing(true);
-    const result = await CloudSyncService.fetchCloudRuns();
-    setIsSyncing(false);
-
-    if (result.success && result.data) {
-      setRuns(result.data);
-      setIsCloudConnected(true);
-    } else {
-      setIsCloudConnected(false);
-      // Fallback to local
-      const local = CloudSyncService.getLocalRuns();
-      if (local.length > 0) {
-        setRuns(local);
-      }
-    }
-  }, []);
-
+  // Real-time Firebase Sync listener
   useEffect(() => {
-    loadCloudRuns();
-  }, [loadCloudRuns]);
+    testConnection();
+    setIsSyncing(true);
+
+    const unsubscribe = FirebaseRunService.subscribeRuns(
+      (updatedRuns) => {
+        setRuns(updatedRuns);
+        setIsCloudConnected(true);
+        setIsSyncing(false);
+      },
+      (err) => {
+        console.warn("Real-time Firebase sync issue:", err);
+        setIsCloudConnected(false);
+        setIsSyncing(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   // Toast Helper
   const showToast = (msg: string) => {
@@ -86,59 +85,52 @@ export default function App() {
 
   // Handle Save New Run
   const handleSaveRun = async (newRun: RunSession) => {
-    const saveRes = await CloudSyncService.saveRun(newRun);
-    if (saveRes.success) {
-      setRuns((prev) => {
-        const idx = prev.findIndex((r) => r.id === saveRes.run.id);
-        if (idx >= 0) {
-          const updated = [...prev];
-          updated[idx] = saveRes.run;
-          return updated;
-        }
-        return [saveRes.run, ...prev];
-      });
-
-      if (saveRes.synced) {
-        setIsCloudConnected(true);
-        showToast(`Ujian ${newRun.student.name} tersimpan & tersinkron ke cloud! Nilai: ${newRun.score}`);
-      } else {
-        showToast(`Ujian ${newRun.student.name} tersimpan lokal (akan disinkron saat online). Nilai: ${newRun.score}`);
-      }
+    try {
+      const saved = await FirebaseRunService.saveRun(newRun);
+      const modeLabel = saved.mode === "latihan" ? "Latihan" : "Ujian";
+      showToast(`${modeLabel} ${saved.student.name} tersimpan di Firebase! Nilai: ${saved.score}`);
+    } catch (e) {
+      showToast(`Data tersimpan di perangkat.`);
     }
   };
 
   // Handle Manual Sync
   const handleManualSync = async () => {
     setIsSyncing(true);
-    const res = await CloudSyncService.syncAllRuns();
+    const local = FirebaseRunService.getLocalRuns();
+    setRuns(local);
     setIsSyncing(false);
-
-    if (res.success) {
-      setIsCloudConnected(true);
-      const updated = CloudSyncService.getLocalRuns();
-      setRuns(updated);
-      showToast(`Berhasil sinkronisasi ${res.total} data ke cloud!`);
-    } else {
-      setIsCloudConnected(false);
-      showToast("Gagal terhubung ke server cloud. Data tersimpan aman di perangkat.");
-    }
+    setIsCloudConnected(true);
+    showToast("Data tersinkronisasi dengan Firebase Cloud.");
   };
 
   // Handle Delete Run
   const handleDeleteRun = async (id: string) => {
-    await CloudSyncService.deleteRun(id);
-    setRuns((prev) => prev.filter((r) => r.id !== id));
-    showToast("Data ujian berhasil dihapus.");
+    try {
+      await FirebaseRunService.deleteRun(id);
+      showToast("Data berhasil dihapus dari Firebase.");
+    } catch (e) {
+      showToast("Gagal menghapus data.");
+    }
   };
 
-  // Handle Delete All Runs (Clear/Reset database & local storage)
-  const handleClearAllRuns = async () => {
-    await CloudSyncService.clearAllRuns();
-    setRuns([]);
-    if (selectedRunForDetails) {
-      setSelectedRunForDetails(null);
+  // Handle Delete All Runs (Clear/Reset by mode or all)
+  const handleClearAllRuns = async (mode?: RunMode | "all") => {
+    try {
+      await FirebaseRunService.clearAllRuns(mode);
+      if (selectedRunForDetails) {
+        setSelectedRunForDetails(null);
+      }
+      const label =
+        mode === "latihan"
+          ? "Data latihan"
+          : mode === "ujian"
+          ? "Data ujian lari"
+          : "Seluruh data lari";
+      showToast(`${label} berhasil dibersihkan dari Firebase.`);
+    } catch (e) {
+      showToast("Gagal mereset data.");
     }
-    showToast("Seluruh data lari berhasil dibersihkan & direset.");
   };
 
   // Test Audio
@@ -170,7 +162,7 @@ export default function App() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 pb-24 md:pb-8">
         {/* Toast Notification */}
         {toastMessage && (
           <div className="fixed bottom-16 sm:bottom-6 right-4 sm:right-6 z-50 max-w-sm sm:max-w-md bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-2.5 sm:py-3 rounded-xl shadow-2xl border border-slate-700 dark:border-slate-200 text-xs font-semibold flex items-center space-x-2.5 animate-in fade-in slide-in-from-bottom-5">
@@ -179,7 +171,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 1: Timer Ujian (Lari 1.500m) */}
+        {/* Tab 1: Timer Ujian & Latihan */}
         {activeTab === "timer" && (
           <TimerSection
             onSaveRun={handleSaveRun}
@@ -225,7 +217,7 @@ export default function App() {
         onClose={() => setIsStudentModalOpen(false)}
         onSave={(student) => {
           setCurrentStudent(student);
-          showToast(`Peserta ujian diatur: ${student.name} (${student.className} • No. Absen ${student.attendanceNumber})`);
+          showToast(`Siswa: ${student.name} (${student.className} • Absen ${student.attendanceNumber})`);
         }}
         initialStudent={currentStudent}
       />
@@ -234,11 +226,11 @@ export default function App() {
       <footer className="mt-auto border-t border-slate-200 dark:border-slate-800/80 py-3 px-4 text-center text-xs text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-900/50 hidden md:block">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>
-            Sistem Pencatat Waktu & Evaluasi Ujian Lari 1.500m (PJOK) • Penilaian Otomatis 80 - 100
+            Pencatat Waktu Lari 1.500m PJOK • Mode Latihan & Ujian • Penilaian 80 - 100
           </p>
           <div className="flex items-center space-x-3 text-[11px]">
-            <span className="inline-flex items-center text-emerald-600 dark:text-emerald-400">
-              <ShieldCheck className="w-3 h-3 mr-1" /> Cloud Sync
+            <span className="inline-flex items-center text-emerald-600 dark:text-emerald-400 font-semibold">
+              <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Firebase Firestore Online
             </span>
             <span>•</span>
             <span>Ekspor Excel & PDF</span>

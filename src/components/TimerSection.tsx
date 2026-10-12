@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
-import { StudentInfo, LapRecord, KmSplit, RunSession } from "../types";
+import { StudentInfo, LapRecord, KmSplit, RunSession, RunMode } from "../types";
 import { formatTime, formatPace, calculateRunGrade } from "../utils/grading";
 import { audioService } from "../utils/audio";
 import { LapRecordTable } from "./LapRecordTable";
@@ -23,6 +23,7 @@ import {
   CheckCircle,
   Clock,
   Compass,
+  Calendar,
 } from "lucide-react";
 
 interface TimerSectionProps {
@@ -42,6 +43,11 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
   setSoundEnabled,
   darkMode,
 }) => {
+  // Mode selection: Ujian Lari vs Latihan
+  const [runMode, setRunMode] = useState<RunMode>("ujian");
+  // Tanggal lari (YYYY-MM-DD)
+  const [runDate, setRunDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+
   // Timer state
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -249,6 +255,8 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
 
     const runSession: RunSession = {
       id: `run-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      mode: runMode,
+      runDate: runDate || new Date().toISOString().slice(0, 10),
       student,
       date: new Date().toISOString(),
       totalDistanceM: 1500,
@@ -340,6 +348,50 @@ export const TimerSection: React.FC<TimerSectionProps> = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Mode & Tanggal Lari Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center space-x-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 w-full sm:w-auto">
+          <button
+            type="button"
+            disabled={isRunning}
+            onClick={() => setRunMode("ujian")}
+            className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+              runMode === "ujian"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            🏃 Mode Ujian Lari
+          </button>
+          <button
+            type="button"
+            disabled={isRunning}
+            onClick={() => setRunMode("latihan")}
+            className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+              runMode === "latihan"
+                ? "bg-teal-600 text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            👟 Mode Latihan
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between sm:justify-end space-x-2">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center space-x-1">
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <span>Tanggal:</span>
+          </span>
+          <input
+            type="date"
+            disabled={isRunning}
+            value={runDate}
+            onChange={(e) => setRunDate(e.target.value)}
+            className="text-xs font-semibold py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden"
+          />
+        </div>
+      </div>
+
       {/* Student Identity Card / Registration Prompt */}
       {!student.name.trim() ? (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50/50 dark:from-slate-900 dark:to-amber-950/20 border-2 border-amber-300/80 dark:border-amber-700/60 shadow-xs">

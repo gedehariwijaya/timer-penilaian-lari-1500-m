@@ -1,20 +1,17 @@
 import React, { useState, useMemo } from "react";
-import { RunSession, Gender } from "../types";
-import { formatTime, formatPace, calculateRunGrade } from "../utils/grading";
+import { RunSession, Gender, RunMode } from "../types";
+import { formatTime, formatPace } from "../utils/grading";
 import { exportClassLeaderboardToPDF, exportStudentRunToPDF } from "../utils/pdfExport";
 import { exportLeaderboardToExcel } from "../utils/excelExport";
 import {
   Trophy,
-  Medal,
   Crown,
   Search,
-  Filter,
   FileDown,
   FileSpreadsheet,
   ArrowUpDown,
-  Sparkles,
-  Award,
   Trash2,
+  Calendar,
 } from "lucide-react";
 import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 
@@ -22,7 +19,7 @@ interface LeaderboardSectionProps {
   runs: RunSession[];
   onSelectRunForDetails: (run: RunSession) => void;
   onDeleteRun?: (id: string) => void;
-  onClearAllRuns?: () => void;
+  onClearAllRuns?: (mode?: RunMode | "all") => void;
 }
 
 export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
@@ -31,13 +28,27 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
   onDeleteRun,
   onClearAllRuns,
 }) => {
+  // Mode separation: "ujian" vs "latihan"
+  const [modeFilter, setModeFilter] = useState<RunMode>("ujian");
+  // Date filter
+  const [dateFilter, setDateFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<"all" | Gender>("all");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"time" | "score">("time");
-  const [deleteTarget, setDeleteTarget] = useState<RunSession | "all" | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<RunSession | "current_mode" | "all" | null>(null);
 
-  // Get distinct classes
+  // Distinct dates across runs
+  const availableDates = useMemo(() => {
+    const set = new Set<string>();
+    runs.forEach((r) => {
+      const d = r.runDate || r.date.slice(0, 10);
+      if (d) set.add(d);
+    });
+    return Array.from(set).sort().reverse();
+  }, [runs]);
+
+  // Distinct classes
   const availableClasses = useMemo(() => {
     const set = new Set<string>();
     runs.forEach((r) => {
@@ -50,8 +61,18 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
   const filteredRuns = useMemo(() => {
     return runs
       .filter((r) => {
+        // 1. Separate Mode
+        if (r.mode !== modeFilter) return false;
+        // 2. Filter Tanggal Lari
+        if (dateFilter !== "all") {
+          const d = r.runDate || r.date.slice(0, 10);
+          if (d !== dateFilter) return false;
+        }
+        // 3. Gender
         if (genderFilter !== "all" && r.student.gender !== genderFilter) return false;
+        // 4. Kelas
         if (classFilter !== "all" && r.student.className !== classFilter) return false;
+        // 5. Pencarian
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const matchName = r.student.name.toLowerCase().includes(q);
@@ -69,48 +90,61 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
           return b.score - a.score;
         }
       });
-  }, [runs, genderFilter, classFilter, searchQuery, sortBy]);
+  }, [runs, modeFilter, dateFilter, genderFilter, classFilter, searchQuery, sortBy]);
 
   const topThree = filteredRuns.slice(0, 3);
+  const examRunsCount = runs.filter((r) => r.mode === "ujian").length;
+  const practiceRunsCount = runs.filter((r) => r.mode === "latihan").length;
 
   const handleExportPDF = () => {
-    const filterTitle =
-      classFilter === "all" ? (genderFilter === "all" ? "Semua Kelas" : `Kategori ${genderFilter}`) : classFilter;
+    const modeName = modeFilter === "ujian" ? "Ujian Lari" : "Latihan";
+    const filterTitle = `${modeName} - ${
+      classFilter === "all" ? (genderFilter === "all" ? "Semua Kelas" : `Kategori ${genderFilter}`) : classFilter
+    }${dateFilter !== "all" ? ` (${dateFilter})` : ""}`;
     exportClassLeaderboardToPDF(filteredRuns, filterTitle);
   };
 
   const handleExportExcel = () => {
-    const filterTitle =
-      classFilter === "all" ? (genderFilter === "all" ? "Semua Kelas" : `Kategori ${genderFilter}`) : classFilter;
+    const modeName = modeFilter === "ujian" ? "Ujian Lari" : "Latihan";
+    const filterTitle = `${modeName} - ${
+      classFilter === "all" ? (genderFilter === "all" ? "Semua Kelas" : `Kategori ${genderFilter}`) : classFilter
+    }${dateFilter !== "all" ? ` (${dateFilter})` : ""}`;
     exportLeaderboardToExcel(filteredRuns, filterTitle);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div>
-          <div className="flex items-center space-x-2">
-            <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400">
-              <Trophy className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                Klasemen & Leaderboard Lari 1.5K
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Peringkat kecepatan siswa & evaluasi nilai otomatis (80 - 100)
-              </p>
-            </div>
-          </div>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Mode Switcher Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center space-x-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 w-full sm:w-auto">
+          <button
+            onClick={() => setModeFilter("ujian")}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+              modeFilter === "ujian"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            🏃 Klasemen Ujian ({examRunsCount})
+          </button>
+          <button
+            onClick={() => setModeFilter("latihan")}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+              modeFilter === "latihan"
+                ? "bg-teal-600 text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            👟 Data Latihan ({practiceRunsCount})
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             id="btn-export-class-excel"
             onClick={handleExportExcel}
-            className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 shrink-0"
-            title="Download seluruh nilai klasemen dalam format Microsoft Excel (.xlsx)"
+            className="inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 shrink-0"
+            title="Download nilai klasemen format Excel (.xlsx)"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
             <span>Ekspor Excel</span>
@@ -119,22 +153,22 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
           <button
             id="btn-export-class-pdf"
             onClick={handleExportPDF}
-            className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-semibold text-xs sm:text-sm shadow-xs transition-all active:scale-95 shrink-0"
-            title="Download lembar rekap klasemen format PDF"
+            className="inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-semibold text-xs sm:text-sm shadow-xs transition-all active:scale-95 shrink-0"
+            title="Download rekap klasemen format PDF"
           >
             <FileDown className="w-4 h-4 text-slate-300" />
             <span>Ekspor PDF</span>
           </button>
 
-          {onClearAllRuns && runs.length > 0 && (
+          {onClearAllRuns && filteredRuns.length > 0 && (
             <button
               id="btn-reset-leaderboard"
-              onClick={() => setDeleteTarget("all")}
-              className="inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 font-bold text-xs sm:text-sm border border-rose-200 dark:border-rose-800 shadow-xs transition-all active:scale-95 shrink-0"
-              title="Hapus seluruh data siswa di leaderboard untuk memulai sesi/kelas baru"
+              onClick={() => setDeleteTarget("current_mode")}
+              className="inline-flex items-center justify-center space-x-1.5 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 font-bold text-xs sm:text-sm border border-rose-200 dark:border-rose-800 shadow-xs transition-all active:scale-95 shrink-0"
+              title={`Hapus data ${modeFilter === "ujian" ? "ujian" : "latihan"}`}
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-              <span>Hapus Semua</span>
+              <span>Hapus {modeFilter === "ujian" ? "Ujian" : "Latihan"}</span>
             </button>
           )}
         </div>
@@ -155,7 +189,9 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
               <h4 className="font-extrabold text-base text-slate-900 dark:text-white mt-0.5 truncate max-w-full">
                 {topThree[1].student.name}
               </h4>
-              <span className="text-xs text-slate-500">{topThree[1].student.className}</span>
+              <span className="text-xs text-slate-500">
+                {topThree[1].student.className} • {topThree[1].runDate || topThree[1].date.slice(0, 10)}
+              </span>
 
               <div className="my-2.5 py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 w-full">
                 <div className="text-lg sm:text-xl font-black font-mono text-slate-800 dark:text-slate-100">
@@ -181,7 +217,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                 {topThree[0].student.name}
               </h4>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                {topThree[0].student.className} • {topThree[0].student.gender === "putra" ? "Putra" : "Putri"}
+                {topThree[0].student.className} • {topThree[0].student.gender === "putra" ? "Putra" : "Putri"} • {topThree[0].runDate || topThree[0].date.slice(0, 10)}
               </span>
 
               <div className="my-2.5 py-2 px-3 rounded-xl bg-white/90 dark:bg-slate-800/90 border border-amber-200 dark:border-amber-800/80 w-full shadow-xs">
@@ -207,7 +243,9 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
               <h4 className="font-extrabold text-base text-slate-900 dark:text-white mt-0.5 truncate max-w-full">
                 {topThree[2].student.name}
               </h4>
-              <span className="text-xs text-slate-500">{topThree[2].student.className}</span>
+              <span className="text-xs text-slate-500">
+                {topThree[2].student.className} • {topThree[2].runDate || topThree[2].date.slice(0, 10)}
+              </span>
 
               <div className="my-2.5 py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 w-full">
                 <div className="text-lg sm:text-xl font-black font-mono text-slate-800 dark:text-slate-100">
@@ -223,8 +261,25 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
       )}
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 p-3 sm:p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
         <div className="flex flex-wrap items-center gap-2">
+          {/* Tanggal Lari Filter */}
+          <div className="flex items-center space-x-1.5 text-xs font-semibold py-1 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="bg-transparent focus:outline-hidden"
+            >
+              <option value="all">Semua Tanggal</option>
+              {availableDates.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Gender Filter */}
           <div className="flex items-center space-x-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs font-medium">
             <button
@@ -295,37 +350,39 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
       {/* Leaderboard Table */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[620px] text-left text-xs sm:text-sm">
+          <table className="w-full min-w-[700px] text-left text-xs sm:text-sm">
             <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-3.5 text-center w-14">Rank</th>
-                <th className="py-3 px-3.5">Nama Siswa</th>
-                <th className="py-3 px-3.5">Kelas</th>
-                <th className="py-3 px-3.5 text-center">Gender</th>
-                <th className="py-3 px-3.5 text-right">Waktu 1.5K</th>
-                <th className="py-3 px-3.5 text-right">Kecepatan</th>
-                <th className="py-3 px-3.5 text-right">Nilai (80-100)</th>
-                <th className="py-3 px-3.5 text-center">Aksi</th>
+                <th className="py-3 px-3 text-center w-12">Rank</th>
+                <th className="py-3 px-3">Nama Siswa</th>
+                <th className="py-3 px-3">Kelas</th>
+                <th className="py-3 px-3 text-center">Gender</th>
+                <th className="py-3 px-3 text-center">Tanggal</th>
+                <th className="py-3 px-3 text-right">Waktu 1.5K</th>
+                <th className="py-3 px-3 text-right">Kecepatan</th>
+                <th className="py-3 px-3 text-right">Nilai</th>
+                <th className="py-3 px-3 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-xs sm:text-sm">
               {filteredRuns.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-400 font-sans">
-                    Tidak ada data siswa yang cocok dengan filter.
+                  <td colSpan={9} className="py-8 text-center text-slate-400 font-sans">
+                    Tidak ada data {modeFilter === "ujian" ? "ujian" : "latihan"} yang cocok dengan filter.
                   </td>
                 </tr>
               ) : (
                 filteredRuns.map((run, idx) => {
                   const rank = idx + 1;
                   const speedKmh = ((run.totalDistanceM / 1000) / (run.totalTimeMs / 3600000)).toFixed(1);
+                  const runDateStr = run.runDate || run.date.slice(0, 10);
 
                   return (
                     <tr
                       key={run.id}
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                     >
-                      <td className="py-3 px-3.5 text-center font-bold">
+                      <td className="py-3 px-3 text-center font-bold">
                         {rank === 1 ? (
                           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-400 text-amber-950 font-bold text-xs">
                             1
@@ -343,20 +400,20 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                         )}
                       </td>
 
-                      <td className="py-3 px-3.5 font-sans font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-3 font-sans font-bold text-slate-900 dark:text-white">
                         <div>
                           <span>{run.student.name}</span>
                           <p className="text-[11px] font-mono text-slate-400 font-normal">
-                            No. Absen: {run.student.attendanceNumber || run.student.studentId || "-"}
+                            Absen: {run.student.attendanceNumber || run.student.studentId || "-"}
                           </p>
                         </div>
                       </td>
 
-                      <td className="py-3 px-3.5 font-sans text-slate-700 dark:text-slate-300">
+                      <td className="py-3 px-3 font-sans text-slate-700 dark:text-slate-300">
                         {run.student.className}
                       </td>
 
-                      <td className="py-3 px-3.5 text-center font-sans">
+                      <td className="py-3 px-3 text-center font-sans">
                         <span
                           className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-semibold ${
                             run.student.gender === "putra"
@@ -368,15 +425,19 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                         </span>
                       </td>
 
-                      <td className="py-3 px-3.5 text-right font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-3 text-center text-xs text-slate-500 font-mono">
+                        {runDateStr}
+                      </td>
+
+                      <td className="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">
                         {formatTime(run.totalTimeMs)}
                       </td>
 
-                      <td className="py-3 px-3.5 text-right font-medium text-slate-700 dark:text-slate-300">
+                      <td className="py-3 px-3 text-right font-medium text-slate-700 dark:text-slate-300">
                         {speedKmh} <span className="text-xs text-slate-400 font-normal">km/j</span>
                       </td>
 
-                      <td className="py-3 px-3.5 text-right">
+                      <td className="py-3 px-3 text-right">
                         <div className="inline-flex items-center space-x-1.5">
                           <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
                             {run.score}
@@ -387,8 +448,8 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                         </div>
                       </td>
 
-                      <td className="py-3 px-3.5 text-center font-sans">
-                        <div className="flex items-center justify-center space-x-1.5">
+                      <td className="py-3 px-3 text-center font-sans">
+                        <div className="flex items-center justify-center space-x-1">
                           <button
                             onClick={() => onSelectRunForDetails(run)}
                             title="Lihat Detail & Grafik"
@@ -406,7 +467,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                           {onDeleteRun && (
                             <button
                               onClick={() => setDeleteTarget(run)}
-                              title={`Hapus data lari ${run.student.name}`}
+                              title={`Hapus data ${run.student.name}`}
                               className="p-1 rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -427,22 +488,35 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
       <ConfirmDeleteModal
         isOpen={deleteTarget !== null}
         title={
-          deleteTarget === "all"
-            ? "Reset & Hapus Seluruh Data Klasemen?"
+          deleteTarget === "current_mode"
+            ? `Hapus Seluruh Data ${modeFilter === "ujian" ? "Ujian" : "Latihan"}?`
+            : deleteTarget === "all"
+            ? "Reset & Hapus Seluruh Data Lari?"
             : `Hapus Data Siswa: ${deleteTarget?.student.name || ""}?`
         }
         message={
-          deleteTarget === "all"
-            ? "Semua rekaman nilai ujian lari 1.500m siswa akan dihapus dari leaderboard dan database. Guru dapat memulai sesi kelas baru dengan bersih tanpa terganggu data lama. Tindakan ini tidak dapat dibatalkan."
+          deleteTarget === "current_mode"
+            ? `Semua rekaman ${modeFilter === "ujian" ? "ujian lari" : "latihan"} siswa akan dihapus dari database. Mode lainnya tidak terpengaruh.`
+            : deleteTarget === "all"
+            ? "Semua rekaman nilai ujian dan latihan siswa akan dihapus permanen dari sistem."
             : `Rekaman waktu tempuh (${deleteTarget ? formatTime(deleteTarget.totalTimeMs) : ""}) dan nilai (${deleteTarget?.score || ""}) milik siswa ini akan dihapus permanen.`
         }
-        confirmLabel={deleteTarget === "all" ? "Ya, Hapus Semua Data" : "Ya, Hapus Siswa"}
+        confirmLabel={
+          deleteTarget === "current_mode"
+            ? `Ya, Hapus Data ${modeFilter === "ujian" ? "Ujian" : "Latihan"}`
+            : deleteTarget === "all"
+            ? "Ya, Hapus Semua"
+            : "Ya, Hapus Siswa"
+        }
         onConfirm={() => {
-          if (deleteTarget === "all") {
-            onClearAllRuns?.();
+          if (deleteTarget === "current_mode") {
+            onClearAllRuns?.(modeFilter);
+          } else if (deleteTarget === "all") {
+            onClearAllRuns?.("all");
           } else if (deleteTarget) {
             onDeleteRun?.(deleteTarget.id);
           }
+          setDeleteTarget(null);
         }}
         onClose={() => setDeleteTarget(null)}
       />

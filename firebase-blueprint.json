@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "RunSession": {
+      "title": "RunSession",
+      "description": "Rekaman data lari 1.500m siswa untuk mode ujian atau latihan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "mode": { "type": "string", "enum": ["ujian", "latihan"] },
+        "runDate": { "type": "string", "maxLength": 10 },
+        "student": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "maxLength": 120 },
+            "className": { "type": "string", "maxLength": 50 },
+            "attendanceNumber": { "type": "string", "maxLength": 20 },
+            "gender": { "type": "string", "enum": ["putra", "putri"] }
+          },
+          "required": ["name", "className", "attendanceNumber", "gender"]
+        },
+        "date": { "type": "string", "maxLength": 40 },
+        "totalDistanceM": { "type": "number" },
+        "totalTimeMs": { "type": "number" },
+        "score": { "type": "number" },
+        "gradePredicate": { "type": "string", "maxLength": 60 },
+        "laps": { "type": "array" },
+        "kmSplits": { "type": "array" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "syncedToCloud": { "type": "boolean" },
+        "updatedAt": { "type": "string", "maxLength": 40 }
+      },
+      "required": ["id", "mode", "runDate", "student", "totalDistanceM", "totalTimeMs", "score", "gradePredicate"]
+    }
+  },
+  "firestore": {
+    "/runs/{runId}": {
+      "schema": "RunSession",
+      "description": "Koleksi data lari siswa terpisah antara mode latihan dan ujian dengan filter tanggal"
+    }
+  }
+}

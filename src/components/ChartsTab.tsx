@@ -54,7 +54,8 @@ export const ChartsTab: React.FC<ChartsTabProps> = ({ runs, darkMode }) => {
           >
             {runs.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.student.name} ({r.student.className}) - {formatTime(r.totalTimeMs)}
+                {r.mode === "latihan" ? "[Latihan] " : "[Ujian] "}
+                {r.student.name} ({r.student.className}) • {r.runDate || r.date.slice(0, 10)} - {formatTime(r.totalTimeMs)}
               </option>
             ))}
           </select>

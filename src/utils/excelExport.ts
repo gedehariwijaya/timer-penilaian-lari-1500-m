@@ -4,14 +4,13 @@ import { formatTime, formatPace } from "./grading";
 
 export function exportLeaderboardToExcel(
   runs: RunSession[],
-  filterTitle: string = "Semua Kelas"
+  filterTitle: string = "Semua Data"
 ) {
   if (!runs || runs.length === 0) {
     alert("Tidak ada data siswa untuk diekspor ke Excel.");
     return;
   }
 
-  // Prepare header info rows
   const reportDate = new Date().toLocaleDateString("id-ID", {
     weekday: "long",
     year: "numeric",
@@ -24,17 +23,16 @@ export function exportLeaderboardToExcel(
     minute: "2-digit",
   });
 
-  // Build rows as array of objects or arrays
-  // Using 2D array for exact layout with title banner
   const sheetData: (string | number)[][] = [
-    ["REKAPITULASI NILAI UJIAN LARI JARAK MENENGAH 1.500 METER"],
-    ["Mata Pelajaran: Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)"],
-    [`Filter / Kelompok: ${filterTitle}`],
+    ["REKAPITULASI HASIL LARI 1.500 METER PJOK"],
+    [`Kategori / Filter: ${filterTitle}`],
     [`Tanggal Ekspor: ${reportDate}, Pukul ${exportTime} WIB`],
-    [], // Blank separator row
+    [],
     [
       "No",
       "Peringkat",
+      "Mode",
+      "Tanggal Lari",
       "Nama Lengkap Siswa",
       "No. Absen",
       "Kelas",
@@ -43,14 +41,12 @@ export function exportLeaderboardToExcel(
       "Waktu (Detik)",
       "Kecepatan (km/jam)",
       "Pace (menit/km)",
-      "Nilai Akhir (80-100)",
-      "Predikat Nilai",
+      "Nilai (80-100)",
+      "Predikat",
       "Status",
-      "Tanggal Ujian",
     ],
   ];
 
-  // Append student rows
   runs.forEach((run, index) => {
     const rank = index + 1;
     const speedKmh = Number(
@@ -59,17 +55,14 @@ export function exportLeaderboardToExcel(
     const timeInSeconds = Number((run.totalTimeMs / 1000).toFixed(2));
     const paceStr = formatPace(run.totalTimeMs / 1000 / 1.5);
     const status = run.score >= 80 ? "TUNTAS" : "REMIDIAL";
-    const runDate = new Date(run.date).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const modeLabel = run.mode === "latihan" ? "Latihan" : "Ujian Lari";
+    const runDateStr = run.runDate || run.date.slice(0, 10);
 
     sheetData.push([
       index + 1,
-      `Juara ${rank}`,
+      `#${rank}`,
+      modeLabel,
+      runDateStr,
       run.student.name,
       run.student.attendanceNumber || run.student.studentId || "-",
       run.student.className,
@@ -81,11 +74,9 @@ export function exportLeaderboardToExcel(
       run.score,
       run.gradePredicate,
       status,
-      runDate,
     ]);
   });
 
-  // Append summary row
   if (runs.length > 0) {
     const avgScore = Number(
       (runs.reduce((acc, r) => acc + r.score, 0) / runs.length).toFixed(1)
@@ -94,7 +85,9 @@ export function exportLeaderboardToExcel(
     sheetData.push([
       "Ringkasan:",
       "",
-      `Total Siswa: ${runs.length} Orang`,
+      `Total: ${runs.length} Siswa`,
+      "",
+      "",
       "",
       "",
       "",
@@ -105,40 +98,35 @@ export function exportLeaderboardToExcel(
       avgScore,
       "",
       "",
-      "",
     ]);
   }
 
-  // Create worksheet
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-  // Set column widths
   ws["!cols"] = [
     { wch: 6 },  // No
-    { wch: 12 }, // Peringkat
-    { wch: 28 }, // Nama Lengkap Siswa
-    { wch: 12 }, // No. Absen
+    { wch: 10 }, // Peringkat
+    { wch: 14 }, // Mode
+    { wch: 14 }, // Tanggal Lari
+    { wch: 28 }, // Nama
+    { wch: 12 }, // Absen
     { wch: 14 }, // Kelas
     { wch: 10 }, // Gender
-    { wch: 18 }, // Waktu Tempuh
-    { wch: 14 }, // Waktu (Detik)
-    { wch: 18 }, // Kecepatan (km/jam)
+    { wch: 18 }, // Waktu
+    { wch: 14 }, // Detik
+    { wch: 18 }, // Kecepatan
     { wch: 16 }, // Pace
-    { wch: 18 }, // Nilai Akhir
+    { wch: 14 }, // Nilai
     { wch: 18 }, // Predikat
     { wch: 12 }, // Status
-    { wch: 20 }, // Tanggal Ujian
   ];
 
-  // Create workbook
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Nilai Lari 1.5K");
+  XLSX.utils.book_append_sheet(wb, ws, "Rekap Lari 1.5K");
 
-  // Generate clean filename
   const cleanTitle = filterTitle.replace(/[^a-zA-Z0-9]/g, "_");
   const dateStr = new Date().toISOString().slice(0, 10);
-  const fileName = `Nilai_Lari_1.5K_${cleanTitle}_${dateStr}.xlsx`;
+  const fileName = `Rekap_Lari_1.5K_${cleanTitle}_${dateStr}.xlsx`;
 
-  // Write and trigger download
   XLSX.writeFile(wb, fileName);
 }

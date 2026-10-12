@@ -23,12 +23,18 @@ export const EvaluationCard: React.FC<EvaluationCardProps> = ({ run }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-              Evaluasi Ujian 1.500m
+            <span
+              className={`text-[11px] sm:text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                run.mode === "latihan"
+                  ? "text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 border-teal-200 dark:border-teal-800"
+                  : "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800"
+              }`}
+            >
+              {run.mode === "latihan" ? "👟 Mode Latihan" : "🏃 Evaluasi Ujian 1.500m"}
             </span>
             {run.syncedToCloud && (
               <span className="text-[11px] text-slate-500 dark:text-slate-400 inline-flex items-center">
-                <Cloud className="w-3 h-3 mr-1 text-emerald-500" /> Cloud
+                <Cloud className="w-3 h-3 mr-1 text-emerald-500" /> Firebase
               </span>
             )}
           </div>
@@ -50,13 +56,7 @@ export const EvaluationCard: React.FC<EvaluationCardProps> = ({ run }) => {
             <span>•</span>
             <span className="inline-flex items-center">
               <Calendar className="w-3 h-3 mr-1 shrink-0" />
-              {new Date(run.date).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              Tanggal: {run.runDate || run.date.slice(0, 10)}
             </span>
           </div>
         </div>

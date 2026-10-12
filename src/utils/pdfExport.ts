@@ -14,16 +14,19 @@ export function exportStudentRunToPDF(run: RunSession, teacherName = "Drs. Budi 
   const avgSpeedKmh = ((run.totalDistanceM / 1000) / (run.totalTimeMs / 3600000)).toFixed(2);
   const avgPaceSec = (run.totalTimeMs / 1000) / (run.totalDistanceM / 1000);
 
+  const modeLabel = run.mode === "latihan" ? "Latihan Mandiri / Kelas" : "Ujian Praktik 1.5K";
+  const runDateStr = run.runDate || run.date.slice(0, 10);
+
   // Header / Kop Laporan
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text("LAPORAN HASIL UJIAN PRAKTIK PENJASORKES", 105, 18, { align: "center" });
+  doc.text(`LAPORAN HASIL ${run.mode === "latihan" ? "LATIHAN" : "UJIAN"} LARI 1.500 METER`, 105, 18, { align: "center" });
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.text("Tes Kesegaran Jasmani Indonesia (TKJI) - Lari Jarak Menengah 1.500 Meter", 105, 24, { align: "center" });
   doc.setFontSize(9);
   doc.setTextColor(100);
-  doc.text("Tahun Ajaran 2025/2026 - Standar Penilaian Otomatis Kemampuan Aerobik", 105, 29, { align: "center" });
+  doc.text("Mata Pelajaran PJOK - Standar Penilaian Otomatis Kemampuan Aerobik", 105, 29, { align: "center" });
 
   doc.setDrawColor(30, 41, 59);
   doc.setLineWidth(0.8);
@@ -35,12 +38,12 @@ export function exportStudentRunToPDF(run: RunSession, teacherName = "Drs. Budi 
   doc.setTextColor(0);
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("I. IDENTITAS PESERTA UJIAN", 14, 43);
+  doc.text("I. IDENTITAS SISWA", 14, 43);
 
   const studentData = [
     ["Nama Peserta", `: ${run.student.name}`, "Kelas", `: ${run.student.className}`],
     ["Nomor Absen", `: ${run.student.attendanceNumber || run.student.studentId || "-"}`, "Kategori Gender", `: ${run.student.gender === "putra" ? "Laki-laki (Putra)" : "Perempuan (Putri)"}`],
-    ["Tanggal Pelaksanaan", `: ${new Date(run.date).toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}`, "Target Jarak", ": 1.500 Meter (1,5 KM)"],
+    ["Mode Pelaksanaan", `: ${modeLabel}`, "Tanggal Lari", `: ${runDateStr}`],
   ];
 
   autoTable(doc, {

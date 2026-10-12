@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidRun(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.mode in ['ujian', 'latihan']
+        && data.runDate is string && data.runDate.size() <= 10
+        && data.student is map
+        && data.student.name is string && data.student.name.size() <= 120
+        && data.student.className is string && data.student.className.size() <= 50
+        && data.student.gender in ['putra', 'putri']
+        && data.totalDistanceM is number
+        && data.totalTimeMs is number
+        && data.score is number;
+    }
+
+    match /runs/{runId} {
+      allow read: if true;
+      allow create, update: if isValidRun(request.resource.data);
+      allow delete: if true;
+    }
+  }
+}
