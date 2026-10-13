@@ -3,7 +3,11 @@ import autoTable from "jspdf-autotable";
 import { RunSession } from "../types";
 import { formatTime, formatPace, calculateRunGrade } from "./grading";
 
-export function exportStudentRunToPDF(run: RunSession, teacherName = "Drs. Budi Santoso, M.Pd."): void {
+export function exportStudentRunToPDF(
+  run: RunSession,
+  teacherName = "Gede Hari Wijaya, S.Pd., Gr.",
+  teacherNip = "19900608 202012 1 008"
+): void {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -198,7 +202,7 @@ export function exportStudentRunToPDF(run: RunSession, teacherName = "Drs. Budi 
   doc.setFontSize(7.5);
   doc.setTextColor(100);
   doc.text(`No. Absen: ${run.student.attendanceNumber || run.student.studentId || "-"}`, 25, signY + 22);
-  doc.text("NIP. 19820415 200801 1 009", 130, signY + 22);
+  doc.text(`NIP. ${teacherNip}`, 130, signY + 22);
 
   // Footer
   doc.setFontSize(7);
@@ -207,7 +211,12 @@ export function exportStudentRunToPDF(run: RunSession, teacherName = "Drs. Budi 
   doc.save(`Laporan_Ujian_Lari_1500m_${run.student.name.replace(/\s+/g, "_")}.pdf`);
 }
 
-export function exportClassLeaderboardToPDF(runs: RunSession[], classNameFilter = "Semua Kelas"): void {
+export function exportClassLeaderboardToPDF(
+  runs: RunSession[],
+  classNameFilter = "Semua Kelas",
+  teacherName = "Gede Hari Wijaya, S.Pd., Gr.",
+  teacherNip = "19900608 202012 1 008"
+): void {
   const doc = new jsPDF({
     orientation: "landscape",
     unit: "mm",
@@ -266,7 +275,7 @@ export function exportClassLeaderboardToPDF(runs: RunSession[], classNameFilter 
     },
   });
 
-  // Footer Stats
+  // Footer Stats & Signature
   const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
   const avgScore = (sorted.reduce((acc, curr) => acc + curr.score, 0) / (sorted.length || 1)).toFixed(1);
   const bestRun = sorted[0];
@@ -274,6 +283,19 @@ export function exportClassLeaderboardToPDF(runs: RunSession[], classNameFilter 
   doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
   doc.text(`Total Peserta Didik: ${sorted.length} Siswa | Rata-rata Nilai: ${avgScore} | Waktu Tercepat: ${bestRun ? `${bestRun.student.name} (${formatTime(bestRun.totalTimeMs)})` : "-"}`, 14, finalY);
+
+  // Guru Penguji Penjas Signature
+  const signY = Math.min(finalY + 6, 175);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(30, 41, 59);
+  doc.text("Guru Penguji Penjas,", 225, signY);
+  doc.setFont("helvetica", "bold");
+  doc.text(teacherName, 225, signY + 14);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(100);
+  doc.text(`NIP. ${teacherNip}`, 225, signY + 18);
 
   doc.save(`Rekap_Klasemen_Lari_1500m_${classNameFilter.replace(/\s+/g, "_")}.pdf`);
 }

@@ -99,6 +99,22 @@ export function exportLeaderboardToExcel(
       "",
       "",
     ]);
+    sheetData.push([]);
+    sheetData.push([
+      "Guru Penguji Penjas:",
+      "",
+      "Gede Hari Wijaya, S.Pd., Gr.",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "NIP:",
+      "19900608 202012 1 008",
+    ]);
   }
 
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
