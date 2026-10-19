@@ -133,17 +133,10 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           {/* 2. Kelas & 3. No. Absen */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-                  <GraduationCap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Kelas *</span>
-                </label>
-                {className && (
-                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                    {className}
-                  </span>
-                )}
-              </div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center space-x-1.5">
+                <GraduationCap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Kelas *</span>
+              </label>
               <select
                 id="select-student-class"
                 required
@@ -164,41 +157,13 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   <option value={className}>{className}</option>
                 )}
               </select>
-
-              {/* Quick-tap class buttons for fast 1-click selection */}
-              <div className="mt-2 grid grid-cols-3 gap-1.5">
-                {CLASS_OPTIONS.map((cls) => (
-                  <button
-                    key={cls}
-                    type="button"
-                    onClick={() => {
-                      setClassName(cls);
-                      if (errorMsg) setErrorMsg(null);
-                    }}
-                    className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition-all ${
-                      className === cls
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs scale-[1.02]"
-                        : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
-                    }`}
-                  >
-                    {cls}
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-                  <Hash className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>No. Absen *</span>
-                </label>
-                {attendanceNumber && (
-                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                    Absen {attendanceNumber}
-                  </span>
-                )}
-              </div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center space-x-1.5">
+                <Hash className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>No. Absen *</span>
+              </label>
               <select
                 id="select-student-attendance"
                 required
@@ -219,17 +184,6 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   <option value={attendanceNumber}>Nomor Absen {attendanceNumber}</option>
                 )}
               </select>
-
-              <div className="mt-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                <span>Pilihan absen: 1 s.d. 36</span>
-                {attendanceNumber ? (
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                    Terpilih: Absen {attendanceNumber}
-                  </span>
-                ) : (
-                  <span className="italic text-slate-400">Belum dipilih</span>
-                )}
-              </div>
             </div>
           </div>
 
