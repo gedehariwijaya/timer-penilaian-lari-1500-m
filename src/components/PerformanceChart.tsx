@@ -23,19 +23,26 @@ interface PerformanceChartProps {
 export const PerformanceChart: React.FC<PerformanceChartProps> = ({ run, darkMode = false }) => {
   const [activeMetric, setActiveMetric] = useState<"splits" | "laps">("splits");
 
-  // Format data for Per Kilometer Splits (0 - 1.0 KM vs 1.0 - 1.5 KM)
+  // Format data for Per Kilometer / 500m Splits (0 - 500m, 500 - 1000m, 1000 - 1500m)
   const kmSplits = run.kmSplits && run.kmSplits.length > 0 ? run.kmSplits : [];
 
   // If kmSplits not yet recorded (e.g. test run in progress), calculate based on laps or total
-  const splitChartData = kmSplits.map((split) => ({
-    name: split.kmMarker === 1.0 ? "KM 1.0 (0-1000m)" : "KM 1.5 (1000-1500m)",
-    marker: `KM ${split.kmMarker.toFixed(1)}`,
-    speed: Number(split.speedKmh.toFixed(1)),
-    splitSeconds: Math.round(split.splitTimeMs / 1000),
-    splitFormatted: formatTime(split.splitTimeMs),
-    pace: formatPace(split.paceSecondsPerKm),
-    paceSeconds: Math.round(split.paceSecondsPerKm),
-  }));
+  const splitChartData = kmSplits.map((split) => {
+    let segmentLabel = `KM ${split.kmMarker.toFixed(1)}`;
+    if (split.kmMarker === 0.5) segmentLabel = "Split 1 (0-500m)";
+    else if (split.kmMarker === 1.0) segmentLabel = "Split 2 (500-1000m)";
+    else if (split.kmMarker === 1.5) segmentLabel = "Split 3 (1000-1500m)";
+
+    return {
+      name: segmentLabel,
+      marker: `KM ${split.kmMarker.toFixed(1)}`,
+      speed: Number(split.speedKmh.toFixed(1)),
+      splitSeconds: Math.round(split.splitTimeMs / 1000),
+      splitFormatted: formatTime(split.splitTimeMs),
+      pace: formatPace(split.paceSecondsPerKm),
+      paceSeconds: Math.round(split.paceSecondsPerKm),
+    };
+  });
 
   // Format data for Laps
   const lapChartData = run.laps.map((lap) => ({
@@ -52,16 +59,18 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ run, darkMod
   const textColor = darkMode ? "#94a3b8" : "#64748b";
 
   // Check pacing strategy
+  const km0_5 = splitChartData.find((s) => s.marker.includes("0.5"));
   const km1 = splitChartData.find((s) => s.marker.includes("1.0"));
   const km1_5 = splitChartData.find((s) => s.marker.includes("1.5"));
   let pacingStrategy = "Stabil";
-  let pacingDesc = "Pace terjaga konsisten di setiap kilometer lari.";
+  let pacingDesc = "Pace terjaga konsisten di setiap segmen lari.";
 
-  if (km1 && km1_5) {
-    if (km1_5.speed > km1.speed + 0.5) {
-      pacingStrategy = "Negative Split (Sangat Positif)";
-      pacingDesc = "Siswa berhasil meningkatkan kecepatan di 500m terakhir. Strategi lari sangat efisien!";
-    } else if (km1.speed > km1_5.speed + 1.2) {
+  if (km1_5 && (km1 || km0_5)) {
+    const prevSpeed = km1?.speed || km0_5?.speed || 0;
+    if (km1_5.speed > prevSpeed + 0.5) {
+      pacingStrategy = "Negative Split (Finishing Kuat)";
+      pacingDesc = "Siswa berhasil meningkatkan kecepatan di 500m terakhir (sprint finish). Strategi lari sangat efisien!";
+    } else if (prevSpeed > km1_5.speed + 1.2) {
       pacingStrategy = "Penurunan Kecepatan Akhir";
       pacingDesc = "Kecepatan di 500m terakhir menurun akibat kelelahan aerobik. Disarankan melatih daya tahan tempo.";
     }

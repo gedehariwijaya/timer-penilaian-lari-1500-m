@@ -13,6 +13,29 @@ import { RunSession, RunMode } from "../types";
 const RUNS_COLLECTION = "runs";
 const LOCAL_STORAGE_KEY = "lari_1500m_sessions_v1";
 
+/**
+ * Recursively strips keys with `undefined` values from an object,
+ * ensuring Firestore setDoc doesn't fail with 'Unsupported field value: undefined'.
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return null as unknown as T;
+  }
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeForFirestore(item)) as unknown as T;
+  }
+  if (typeof data === "object" && !(data instanceof Date)) {
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data as Record<string, any>)) {
+      if (value !== undefined) {
+        result[key] = sanitizeForFirestore(value);
+      }
+    }
+    return result as unknown as T;
+  }
+  return data;
+}
+
 // Helper to normalize runs
 export function normalizeRun(raw: any, docId?: string): RunSession {
   const id = raw.id || docId || `run-${Date.now()}`;
@@ -23,7 +46,7 @@ export function normalizeRun(raw: any, docId?: string): RunSession {
       : rawDate.slice(0, 10);
   const mode: RunMode = raw.mode === "latihan" ? "latihan" : "ujian";
 
-  return {
+  const run: RunSession = {
     id,
     mode,
     runDate,
@@ -32,7 +55,6 @@ export function normalizeRun(raw: any, docId?: string): RunSession {
       className: raw.student?.className || "XII",
       attendanceNumber: raw.student?.attendanceNumber || "01",
       gender: raw.student?.gender === "putri" ? "putri" : "putra",
-      studentId: raw.student?.studentId,
     },
     date: rawDate,
     totalDistanceM: raw.totalDistanceM || 1500,
@@ -45,6 +67,21 @@ export function normalizeRun(raw: any, docId?: string): RunSession {
     syncedToCloud: true,
     updatedAt: raw.updatedAt || new Date().toISOString(),
   };
+
+  if (typeof raw.startTime === "string" && raw.startTime.trim()) {
+    run.startTime = raw.startTime;
+  }
+  if (typeof raw.split500mMs === "number" && !isNaN(raw.split500mMs)) {
+    run.split500mMs = raw.split500mMs;
+  }
+  if (typeof raw.split1000mMs === "number" && !isNaN(raw.split1000mMs)) {
+    run.split1000mMs = raw.split1000mMs;
+  }
+  if (typeof raw.student?.studentId === "string" && raw.student.studentId.trim()) {
+    run.student.studentId = raw.student.studentId;
+  }
+
+  return run;
 }
 
 export class FirebaseRunService {
@@ -133,7 +170,8 @@ export class FirebaseRunService {
     // 2. Write to Firestore
     const docRef = doc(db, RUNS_COLLECTION, normalized.id);
     try {
-      await setDoc(docRef, normalized);
+      const firestoreData = sanitizeForFirestore(normalized);
+      await setDoc(docRef, firestoreData);
     } catch (error) {
       console.warn("Failed to write to Firestore, saved to local cache:", error);
       normalized.syncedToCloud = false;

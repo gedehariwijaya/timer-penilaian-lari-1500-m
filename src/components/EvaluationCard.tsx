@@ -2,7 +2,7 @@ import React from "react";
 import { RunSession } from "../types";
 import { calculateRunGrade, formatTime, formatPace } from "../utils/grading";
 import { exportStudentRunToPDF } from "../utils/pdfExport";
-import { Award, FileDown, CheckCircle2, Cloud, User, Calendar, Flame } from "lucide-react";
+import { Award, FileDown, CheckCircle2, Cloud, User, Calendar, Flame, Clock } from "lucide-react";
 
 interface EvaluationCardProps {
   run: RunSession;
@@ -58,6 +58,15 @@ export const EvaluationCard: React.FC<EvaluationCardProps> = ({ run }) => {
               <Calendar className="w-3 h-3 mr-1 shrink-0" />
               Tanggal: {run.runDate || run.date.slice(0, 10)}
             </span>
+            {run.startTime && (
+              <>
+                <span>•</span>
+                <span className="inline-flex items-center text-slate-700 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                  <Clock className="w-3 h-3 mr-1 text-blue-500 shrink-0" />
+                  Mulai: {run.startTime}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -132,31 +141,45 @@ export const EvaluationCard: React.FC<EvaluationCardProps> = ({ run }) => {
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
-            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 block truncate">Putaran Lap</span>
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 block truncate">Split 500m</span>
             <p className="text-lg sm:text-2xl font-black font-mono text-slate-900 dark:text-white mt-0.5">
-              {run.laps.length} <span className="text-xs font-normal text-slate-400">Lap</span>
+              {run.split500mMs
+                ? formatTime(run.split500mMs)
+                : run.kmSplits?.[0]?.kmMarker === 0.5
+                ? formatTime(run.kmSplits[0].splitTimeMs)
+                : "--:--"}
             </p>
-            <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
-              Tercatat
+            <span className="text-[10px] sm:text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+              0 - 500m
             </span>
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
-            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 block truncate">Split KM 1.0</span>
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 block truncate">Split 1.000m</span>
             <p className="text-lg sm:text-2xl font-black font-mono text-slate-900 dark:text-white mt-0.5">
-              {run.kmSplits?.[0] ? formatTime(run.kmSplits[0].splitTimeMs) : "--:--"}
+              {run.split1000mMs
+                ? formatTime(run.split1000mMs)
+                : run.kmSplits?.find((k) => k.kmMarker === 1.0)
+                ? formatTime(run.kmSplits.find((k) => k.kmMarker === 1.0)!.elapsedTimeMs)
+                : run.kmSplits?.[0]
+                ? formatTime(run.kmSplits[0].splitTimeMs)
+                : "--:--"}
             </p>
-            <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
-              1.000m Pertama
+            <span className="text-[10px] sm:text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+              Kumulatif 1.000m
             </span>
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
-            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 block truncate">Split KM 1.5</span>
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 block truncate">Split Finish</span>
             <p className="text-lg sm:text-2xl font-black font-mono text-slate-900 dark:text-white mt-0.5">
-              {run.kmSplits?.[1] ? formatTime(run.kmSplits[1].splitTimeMs) : "--:--"}
+              {run.kmSplits?.find((k) => k.kmMarker === 1.5)
+                ? formatTime(run.kmSplits.find((k) => k.kmMarker === 1.5)!.splitTimeMs)
+                : run.kmSplits?.[1]
+                ? formatTime(run.kmSplits[1].splitTimeMs)
+                : "--:--"}
             </p>
-            <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
               500m Terakhir
             </span>
           </div>

@@ -3,6 +3,7 @@ import { RunSession, Gender, RunMode } from "../types";
 import { formatTime, formatPace } from "../utils/grading";
 import { exportClassLeaderboardToPDF, exportStudentRunToPDF } from "../utils/pdfExport";
 import { exportLeaderboardToExcel } from "../utils/excelExport";
+import { CLASS_OPTIONS } from "../constants";
 import {
   Trophy,
   Crown,
@@ -48,13 +49,20 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
     return Array.from(set).sort().reverse();
   }, [runs]);
 
-  // Distinct classes
+  // Distinct classes (including standard XII 1 to XII 9)
   const availableClasses = useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(CLASS_OPTIONS);
     runs.forEach((r) => {
       if (r.student.className) set.add(r.student.className);
     });
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => {
+      const idxA = (CLASS_OPTIONS as readonly string[]).indexOf(a);
+      const idxB = (CLASS_OPTIONS as readonly string[]).indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
   }, [runs]);
 
   // Filter & Sort
@@ -426,11 +434,23 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
                       </td>
 
                       <td className="py-3 px-3 text-center text-xs text-slate-500 font-mono">
-                        {runDateStr}
+                        <div>{runDateStr}</div>
+                        {run.startTime && (
+                          <div className="text-[10px] text-slate-400 font-sans">
+                            {run.startTime}
+                          </div>
+                        )}
                       </td>
 
                       <td className="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">
-                        {formatTime(run.totalTimeMs)}
+                        <div>{formatTime(run.totalTimeMs)}</div>
+                        {(run.split500mMs || run.split1000mMs) && (
+                          <div className="text-[10px] text-slate-400 font-normal">
+                            {run.split500mMs ? `500m: ${formatTime(run.split500mMs)}` : ""}
+                            {run.split500mMs && run.split1000mMs ? " • " : ""}
+                            {run.split1000mMs ? `1K: ${formatTime(run.split1000mMs)}` : ""}
+                          </div>
+                        )}
                       </td>
 
                       <td className="py-3 px-3 text-right font-medium text-slate-700 dark:text-slate-300">

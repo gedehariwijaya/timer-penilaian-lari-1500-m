@@ -18,7 +18,9 @@ import {
   X,
   Search,
   Calendar,
+  GraduationCap,
 } from "lucide-react";
+import { CLASS_OPTIONS } from "../constants";
 
 interface HistorySectionProps {
   runs: RunSession[];
@@ -40,6 +42,7 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
   const [search, setSearch] = useState("");
   const [modeFilter, setModeFilter] = useState<"all" | RunMode>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
+  const [classFilter, setClassFilter] = useState<string>("all");
   const [deleteTarget, setDeleteTarget] = useState<RunSession | "current_filter" | "all" | null>(null);
 
   // Distinct dates
@@ -61,6 +64,8 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
         const d = r.runDate || r.date.slice(0, 10);
         if (d !== dateFilter) return false;
       }
+      // Class filter
+      if (classFilter !== "all" && r.student.className !== classFilter) return false;
       // Search
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -73,12 +78,12 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
       }
       return true;
     });
-  }, [runs, modeFilter, dateFilter, search]);
+  }, [runs, modeFilter, dateFilter, classFilter, search]);
 
   const handleExportExcel = () => {
     const title = `Riwayat_${modeFilter === "all" ? "Semua" : modeFilter === "ujian" ? "Ujian" : "Latihan"}${
-      dateFilter !== "all" ? `_${dateFilter}` : ""
-    }`;
+      classFilter !== "all" ? `_${classFilter}` : ""
+    }${dateFilter !== "all" ? `_${dateFilter}` : ""}`;
     exportLeaderboardToExcel(filtered, title);
   };
 
@@ -181,6 +186,23 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
                 ))}
               </select>
             </div>
+
+            {/* Kelas Filter */}
+            <div className="flex items-center space-x-1.5 text-xs font-semibold py-1 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={classFilter}
+                onChange={(e) => setClassFilter(e.target.value)}
+                className="bg-transparent focus:outline-hidden"
+              >
+                <option value="all">Semua Kelas</option>
+                {CLASS_OPTIONS.map((cls) => (
+                  <option key={cls} value={cls}>
+                    {cls}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Search */}
@@ -233,9 +255,16 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
                     >
                       {isExam ? "🏃 Ujian Lari" : "👟 Latihan"}
                     </span>
-                    <span className="text-[11px] font-mono text-slate-400">
-                      {runDateStr}
-                    </span>
+                    <div className="text-right">
+                      <span className="text-[11px] font-mono text-slate-400 block">
+                        {runDateStr}
+                      </span>
+                      {run.startTime && (
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 block">
+                          Mulai: {run.startTime}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-start justify-between gap-2">
@@ -271,6 +300,13 @@ export const HistorySection: React.FC<HistorySectionProps> = ({
                       </p>
                     </div>
                   </div>
+
+                  {(run.split500mMs || run.split1000mMs) && (
+                    <div className="mb-2 px-2 py-1 rounded-lg bg-blue-50/60 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 text-[10px] font-mono text-blue-700 dark:text-blue-300 flex items-center justify-between">
+                      <span>Split 500m: {run.split500mMs ? formatTime(run.split500mMs) : "-"}</span>
+                      <span>Split 1.000m: {run.split1000mMs ? formatTime(run.split1000mMs) : "-"}</span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between text-[11px] text-slate-400">
                     <span className="flex items-center">

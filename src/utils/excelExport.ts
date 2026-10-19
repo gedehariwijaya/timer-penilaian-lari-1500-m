@@ -33,10 +33,13 @@ export function exportLeaderboardToExcel(
       "Peringkat",
       "Mode",
       "Tanggal Lari",
+      "Waktu Mulai",
       "Nama Lengkap Siswa",
       "No. Absen",
       "Kelas",
       "Gender",
+      "Split 500m",
+      "Split 1.000m",
       "Waktu Tempuh (1.5K)",
       "Waktu (Detik)",
       "Kecepatan (km/jam)",
@@ -58,15 +61,30 @@ export function exportLeaderboardToExcel(
     const modeLabel = run.mode === "latihan" ? "Latihan" : "Ujian Lari";
     const runDateStr = run.runDate || run.date.slice(0, 10);
 
+    const split500Str = run.split500mMs
+      ? formatTime(run.split500mMs)
+      : run.kmSplits?.[0]?.kmMarker === 0.5
+      ? formatTime(run.kmSplits[0].splitTimeMs)
+      : "-";
+
+    const split1000Str = run.split1000mMs
+      ? formatTime(run.split1000mMs)
+      : run.kmSplits?.find((k) => k.kmMarker === 1.0)
+      ? formatTime(run.kmSplits.find((k) => k.kmMarker === 1.0)!.elapsedTimeMs)
+      : "-";
+
     sheetData.push([
       index + 1,
       `#${rank}`,
       modeLabel,
       runDateStr,
+      run.startTime || "-",
       run.student.name,
       run.student.attendanceNumber || run.student.studentId || "-",
       run.student.className,
       run.student.gender === "putra" ? "Putra" : "Putri",
+      split500Str,
+      split1000Str,
       formatTime(run.totalTimeMs),
       timeInSeconds,
       speedKmh,
@@ -94,6 +112,7 @@ export function exportLeaderboardToExcel(
       "",
       "",
       "",
+      "",
       "Rata-rata Nilai:",
       avgScore,
       "",
@@ -104,6 +123,7 @@ export function exportLeaderboardToExcel(
       "Guru Penguji Penjas:",
       "",
       "Gede Hari Wijaya, S.Pd., Gr.",
+      "",
       "",
       "",
       "",
@@ -124,10 +144,13 @@ export function exportLeaderboardToExcel(
     { wch: 10 }, // Peringkat
     { wch: 14 }, // Mode
     { wch: 14 }, // Tanggal Lari
+    { wch: 16 }, // Waktu Mulai
     { wch: 28 }, // Nama
     { wch: 12 }, // Absen
     { wch: 14 }, // Kelas
     { wch: 10 }, // Gender
+    { wch: 14 }, // Split 500m
+    { wch: 14 }, // Split 1000m
     { wch: 18 }, // Waktu
     { wch: 14 }, // Detik
     { wch: 18 }, // Kecepatan

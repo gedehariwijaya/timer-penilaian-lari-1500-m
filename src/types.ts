@@ -34,8 +34,11 @@ export interface RunSession {
   runDate: string; // YYYY-MM-DD tanggal pelaksanaan lari
   student: StudentInfo;
   date: string;
+  startTime?: string; // Jam mulai pelaksanaan lari (misal: 07:30:15 WIB) untuk meminimalisir kecurangan
   totalDistanceM: number; // 1500
   totalTimeMs: number;
+  split500mMs?: number; // Waktu split saat mencapai 500 meter (ms)
+  split1000mMs?: number; // Waktu split saat mencapai 1.000 meter (ms)
   laps: LapRecord[];
   kmSplits: KmSplit[];
   score: number; // 80 - 100

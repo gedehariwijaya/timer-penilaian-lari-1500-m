@@ -48,6 +48,13 @@ export function exportStudentRunToPDF(
     ["Nama Peserta", `: ${run.student.name}`, "Kelas", `: ${run.student.className}`],
     ["Nomor Absen", `: ${run.student.attendanceNumber || run.student.studentId || "-"}`, "Kategori Gender", `: ${run.student.gender === "putra" ? "Laki-laki (Putra)" : "Perempuan (Putri)"}`],
     ["Mode Pelaksanaan", `: ${modeLabel}`, "Tanggal Lari", `: ${runDateStr}`],
+    ["Waktu Mulai", `: ${run.startTime || "-"}`, "Jarak Tempuh", ": 1.500 Meter"],
+    [
+      "Split 500m",
+      `: ${run.split500mMs ? formatTime(run.split500mMs) : (run.kmSplits?.[0]?.kmMarker === 0.5 ? formatTime(run.kmSplits[0].splitTimeMs) : "-")}`,
+      "Split 1.000m",
+      `: ${run.split1000mMs ? formatTime(run.split1000mMs) : (run.kmSplits?.find((k) => k.kmMarker === 1.0) ? formatTime(run.kmSplits.find((k) => k.kmMarker === 1.0)!.elapsedTimeMs) : "-")}`,
+    ],
   ];
 
   autoTable(doc, {
@@ -117,19 +124,24 @@ export function exportStudentRunToPDF(
   doc.setTextColor(0);
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("III. GRAFIK & ANALISIS SPLIT PER KILOMETER", 14, kmTableY);
+  doc.text("III. ANALISIS SPLIT WAKTU LARI (500m, 1.000m, 1.500m)", 14, kmTableY);
 
   const kmBody = (run.kmSplits && run.kmSplits.length > 0)
     ? run.kmSplits.map((km) => [
-        `KM ${km.kmMarker.toFixed(1)}`,
+        km.kmMarker === 0.5
+          ? "Split 1 (0 - 500m)"
+          : km.kmMarker === 1.0
+          ? "Split 2 (500 - 1.000m)"
+          : "Split 3 (1.000 - 1.500m)",
         formatTime(km.splitTimeMs),
         formatTime(km.elapsedTimeMs),
         `${km.speedKmh.toFixed(1)} km/jam`,
         formatPace(km.paceSecondsPerKm),
       ])
     : [
-        ["KM 1.0 (0-1000m)", formatTime(Math.min(run.totalTimeMs * 0.67, 300000)), formatTime(Math.min(run.totalTimeMs * 0.67, 300000)), `${avgSpeedKmh} km/jam`, formatPace(avgPaceSec)],
-        ["KM 1.5 (1000-1500m)", formatTime(run.totalTimeMs - Math.min(run.totalTimeMs * 0.67, 300000)), formatTime(run.totalTimeMs), `${avgSpeedKmh} km/jam`, formatPace(avgPaceSec)],
+        ["Split 1 (0 - 500m)", formatTime(Math.round(run.totalTimeMs * (500 / 1500))), formatTime(Math.round(run.totalTimeMs * (500 / 1500))), `${avgSpeedKmh} km/jam`, formatPace(avgPaceSec)],
+        ["Split 2 (500 - 1.000m)", formatTime(Math.round(run.totalTimeMs * (500 / 1500))), formatTime(Math.round(run.totalTimeMs * (1000 / 1500))), `${avgSpeedKmh} km/jam`, formatPace(avgPaceSec)],
+        ["Split 3 (1.000 - 1.500m)", formatTime(run.totalTimeMs - Math.round(run.totalTimeMs * (1000 / 1500))), formatTime(run.totalTimeMs), `${avgSpeedKmh} km/jam`, formatPace(avgPaceSec)],
       ];
 
   autoTable(doc, {
@@ -248,30 +260,35 @@ export function exportClassLeaderboardToPDF(
       run.student.attendanceNumber || run.student.studentId || "-",
       run.student.className,
       run.student.gender === "putra" ? "Putra" : "Putri",
-      formatTime(run.totalTimeMs),
+      run.split500mMs || run.split1000mMs
+        ? `${formatTime(run.totalTimeMs)}\n[500m: ${run.split500mMs ? formatTime(run.split500mMs) : "-"} | 1K: ${run.split1000mMs ? formatTime(run.split1000mMs) : "-"}]`
+        : formatTime(run.totalTimeMs),
       `${avgSpeed} km/j`,
       formatPace(avgPace),
       String(evalRes.score),
       evalRes.predicate,
-      new Date(run.date).toLocaleDateString("id-ID"),
+      run.startTime
+        ? `${run.runDate || new Date(run.date).toLocaleDateString("id-ID")}\n(${run.startTime})`
+        : (run.runDate || new Date(run.date).toLocaleDateString("id-ID")),
     ];
   });
 
   autoTable(doc, {
     startY: 30,
     margin: { left: 14, right: 14 },
-    head: [["Peringkat", "Nama Siswa", "No. Absen", "Kelas", "Gender", "Waktu 1.5K", "Kecepatan", "Pace", "Nilai (80-100)", "Predikat", "Tanggal"]],
+    head: [["Peringkat", "Nama Siswa", "No. Absen", "Kelas", "Gender", "Waktu 1.5K", "Kecepatan", "Pace", "Nilai (80-100)", "Predikat", "Tanggal & Mulai"]],
     body: rows,
     theme: "striped",
     headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold", fontSize: 8.5, halign: "center" },
     styles: { fontSize: 8, cellPadding: 2, halign: "center" },
     columnStyles: {
       0: { fontStyle: "bold", cellWidth: 16 },
-      1: { halign: "left", fontStyle: "bold", cellWidth: 45 },
-      2: { cellWidth: 26 },
-      3: { cellWidth: 24 },
+      1: { halign: "left", fontStyle: "bold", cellWidth: 44 },
+      2: { cellWidth: 24 },
+      3: { cellWidth: 22 },
       4: { cellWidth: 18 },
       8: { fontStyle: "bold", textColor: [16, 185, 129] },
+      10: { cellWidth: 32, fontSize: 7.5 },
     },
   });
 
