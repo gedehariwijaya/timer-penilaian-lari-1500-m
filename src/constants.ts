@@ -1,6 +1,8 @@
 /**
- * Standar kelas dan nomor absen untuk ujian PJOK Lari 1.500m
+ * Standar kelas, nomor absen, dan versi aplikasi untuk ujian PJOK Lari 1.500m
  */
+
+export const APP_VERSION = "1.2";
 
 export const CLASS_OPTIONS: readonly string[] = [
   "XII 1",

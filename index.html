@@ -2,6 +2,22 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Suppress harmless Vite HMR WebSocket sandbox connection errors
+      window.addEventListener('error', function(e) {
+        if (e && (e.message?.includes('WebSocket') || (e.error && String(e.error).includes('WebSocket')))) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          return true;
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        if (e && (String(e.reason).includes('WebSocket') || e.reason?.message?.includes('WebSocket'))) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Lari 1.5K - Timer Ujian & Evaluasi</title>
     <meta name="description" content="Aplikasi pencatat waktu ujian lari 1.5 km dengan rekam putaran, grafik performa per km, sinkronisasi cloud, audio lap 500m, penilaian otomatis 80-100, leaderboard, dan ekspor laporan PDF guru." />

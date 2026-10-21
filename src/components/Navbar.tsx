@@ -13,6 +13,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { PWAInstallButton } from "./PWAInstallButton";
+import { APP_VERSION } from "../constants";
 
 interface NavbarProps {
   activeTab: "timer" | "charts" | "leaderboard" | "history";
@@ -54,6 +55,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
               <span className="text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 whitespace-nowrap">
                 PJOK
+              </span>
+              <span
+                id="badge-navbar-version"
+                title={`Aplikasi Versi ${APP_VERSION}`}
+                className="text-[10px] sm:text-xs font-extrabold px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-700 whitespace-nowrap shadow-xs"
+              >
+                Versi {APP_VERSION}
               </span>
             </div>
           </div>
